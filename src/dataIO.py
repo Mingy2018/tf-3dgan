@@ -11,13 +11,14 @@ from mpl_toolkits import mplot3d
 
 try:
     import trimesh
-    from stl import mesh
+    #from stl import mesh
+    import mesh
 except:
     pass
-    print 'All dependencies not loaded, some functionality may not work'
+    print('All dependencies not loaded, some functionality may not work')
 
-LOCAL_PATH = '/home/meetshah1995/datasets/ModelNet/3DShapeNets/volumetric_data/'
-SERVER_PATH = '/home/gpu_users/meetshah/3dgan/volumetric_data/'
+LOCAL_PATH = '/home/zmy/Downloads/3dgan-chair/'
+#SERVER_PATH = '/home/gpu_users/meetshah/3dgan/volumetric_data/'
 
 def getVF(path):
     raw_data = tuple(open(path, 'r'))
@@ -84,7 +85,7 @@ def getVoxelFromMat(path, cube_len=64):
     return voxels
 
 def getAll(obj='airplane',train=True, is_local=False, cube_len=64, obj_ratio=1.0):
-    objPath = SERVER_PATH + obj + '/30/'
+    #objPath = SERVER_PATH + obj + '/30/'
     if is_local:
         objPath = LOCAL_PATH + obj + '/30/'
     objPath += 'train/' if train else 'test/'

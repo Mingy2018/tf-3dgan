@@ -7,13 +7,13 @@ import numpy as np
 import tensorflow as tf
 import dataIO as d
 
-from tqdm import *
+# from tqdm import *
 from utils import *
 
 '''
 Global Parameters
 '''
-n_epochs   = 10000
+n_epochs   = 100
 batch_size = 32
 g_lr       = 0.0025
 d_lr       = 0.00001
@@ -25,9 +25,9 @@ cube_len   = 64
 obj_ratio  = 0.7
 obj        = 'chair' 
 
-train_sample_directory = './train_sample/'
-model_directory = './models/'
-is_local = False
+train_sample_directory = '/home/zmy/Downloads/3dgan-chair/training/'
+model_directory = '/home/zmy/Downloads/3dgan-chair/training/'
+is_local = True
 
 weights = {}
 
@@ -57,12 +57,12 @@ def generator(z, batch_size=batch_size, phase_train=True, reuse=False):
         # g_5 = tf.nn.sigmoid(g_5)
         g_5 = tf.nn.tanh(g_5)
 
-    print g_1, 'g1'
-    print g_2, 'g2'
-    print g_3, 'g3'
-    print g_4, 'g4'
-    print g_5, 'g5'
-    
+    print(g_1, 'g1')
+    print(g_2, 'g2')
+    print(g_3, 'g3')
+    print(g_4, 'g4')
+    print(g_5, 'g5')
+
     return g_5
 
 
@@ -90,11 +90,11 @@ def discriminator(inputs, phase_train=True, reuse=False):
         d_5_no_sigmoid = d_5
         d_5 = tf.nn.sigmoid(d_5)
 
-    print d_1, 'd1'
-    print d_2, 'd2'
-    print d_3, 'd3'
-    print d_4, 'd4'
-    print d_5, 'd5'
+    print(d_1, 'd1')
+    print(d_2, 'd2')
+    print(d_3, 'd3')
+    print(d_4, 'd4')
+    print(d_5, 'd5')
 
     return d_5, d_5_no_sigmoid
 
@@ -178,10 +178,10 @@ def trainGAN(is_dummy=False, checkpoint=None):
 
         if is_dummy:
             volumes = np.random.randint(0,2,(batch_size,cube_len,cube_len,cube_len))
-            print 'Using Dummy Data'
+            print('Using Dummy Data')
         else:
             volumes = d.getAll(obj=obj, train=True, is_local=is_local, obj_ratio=obj_ratio)
-            print 'Using ' + obj + ' Data'
+            print('Using ' + obj + ' Data')
         volumes = volumes[...,np.newaxis].astype(np.float)
         # volumes *= 2.0
         # volumes -= 1.0
@@ -205,14 +205,14 @@ def trainGAN(is_dummy=False, checkpoint=None):
             summary_d, discriminator_loss = sess.run([d_summary_merge,d_loss],feed_dict={z_vector:z, x_vector:x})
             summary_g, generator_loss = sess.run([summary_g_loss,g_loss],feed_dict={z_vector:z})  
             d_accuracy, n_x, n_z = sess.run([d_acc, n_p_x, n_p_z],feed_dict={z_vector:z, x_vector:x})
-            print n_x, n_z
+            print(n_x, n_z)
 
             if d_accuracy < d_thresh:
                 sess.run([optimizer_op_d],feed_dict={z_vector:z, x_vector:x})
-                print 'Discriminator Training ', "epoch: ",epoch,', d_loss:',discriminator_loss,'g_loss:',generator_loss, "d_acc: ", d_accuracy
+                print('Discriminator Training ', "epoch: ",epoch,', d_loss:',discriminator_loss,'g_loss:',generator_loss, "d_acc: ", d_accuracy)
 
             sess.run([optimizer_op_g],feed_dict={z_vector:z})
-            print 'Generator Training ', "epoch: ",epoch,', d_loss:',discriminator_loss,'g_loss:',generator_loss, "d_acc: ", d_accuracy
+            print('Generator Training ', "epoch: ",epoch,', d_loss:',discriminator_loss,'g_loss:',generator_loss, "d_acc: ", d_accuracy)
 
             # output generated chairs
             if epoch % 200 == 0:
@@ -223,7 +223,7 @@ def trainGAN(is_dummy=False, checkpoint=None):
                 id_ch = np.random.randint(0, batch_size, 4)
                 for i in range(4):
                     if g_objects[id_ch[i]].max() > 0.5:
-    		            d.plotVoxelVisdom(np.squeeze(g_objects[id_ch[i]]>0.5), vis, '_'.join(map(str,[epoch,i])))          
+                        d.plotVoxelVisdom(np.squeeze(g_objects[id_ch[i]]>0.5), vis, '_'.join(map(str,[epoch,i])))
             if epoch % 50 == 10:
                 if not os.path.exists(model_directory):
                     os.makedirs(model_directory)      
@@ -239,7 +239,7 @@ def testGAN(trained_model_path=None, n_batches=40):
 
     vis = visdom.Visdom()
 
-    sess = tf.Session()
+    #sess = tf.Session()
     saver = tf.train.Saver()
     
     with tf.Session() as sess:
@@ -249,23 +249,27 @@ def testGAN(trained_model_path=None, n_batches=40):
         # output generated chairs
         for i in range(n_batches):
             next_sigma = float(raw_input())
+
             z_sample = np.random.normal(0, next_sigma, size=[batch_size, z_size]).astype(np.float32)
             g_objects = sess.run(net_g_test,feed_dict={z_vector:z_sample})
             id_ch = np.random.randint(0, batch_size, 4)
             for i in range(4):
-                print g_objects[id_ch[i]].max(), g_objects[id_ch[i]].min(), g_objects[id_ch[i]].shape
+                print(g_objects[id_ch[i]].max(), g_objects[id_ch[i]].min(), g_objects[id_ch[i]].shape)
                 if g_objects[id_ch[i]].max() > 0.5:
                     d.plotVoxelVisdom(np.squeeze(g_objects[id_ch[i]]>0.5), vis, '_'.join(map(str,[i])))
 
 if __name__ == '__main__':
     test = bool(int(sys.argv[1]))
+    ### Test mode
     if test:
         path = sys.argv[2]
         testGAN(trained_model_path=path)
+    ## train mode
     else:
-        ckpt = sys.argv[2]
-        if ckpt == '0':
-            trainGAN(is_dummy=False, checkpoint=None)
-        else:
-            trainGAN(is_dummy=False, checkpoint=ckpt)
+        trainGAN(is_dummy=False, checkpoint=None)
+        #ckpt = sys.argv[2]
+       # if ckpt == '0':
+        #    trainGAN(is_dummy=False, checkpoint=None)
+       # else:
+         #   trainGAN(is_dummy=False, checkpoint=ckpt)
 
